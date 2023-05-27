@@ -28,12 +28,16 @@ def train(args, data, show_loss, show_topk):
                     print(start, loss)
 
             # CTR evaluation
-            train_auc, train_f1 = ctr_eval(sess, model, train_data, args.batch_size)
-            eval_auc, eval_f1 = ctr_eval(sess, model, eval_data, args.batch_size)
-            test_auc, test_f1 = ctr_eval(sess, model, test_data, args.batch_size)
+            train_auc, train_acc, train_precision, train_recall, train_f1 = ctr_eval(sess, model, train_data, args.batch_size)
+            eval_auc, eval_acc, eval_precision, eval_recall, eval_f1 = ctr_eval(sess, model, eval_data, args.batch_size)
+            test_auc, test_acc, test_precision, test_recall, test_f1 = ctr_eval(sess, model, test_data, args.batch_size)
 
-            print('epoch %d    train auc: %.4f  f1: %.4f    eval auc: %.4f  f1: %.4f    test auc: %.4f  f1: %.4f'
-                  % (step, train_auc, train_f1, eval_auc, eval_f1, test_auc, test_f1))
+            print('epoch %d  train auc: %.4f  acc: %.4f  precision: %.4f  recall: %.4f  F1: %.4f'
+                  % (step, train_auc, train_acc, train_precision, train_recall, train_f1))
+            print('epoch %d  eval auc: %.4f  acc: %.4f  precision: %.4f  recall: %.4f  F1: %.4f'
+                  % (step, eval_auc, eval_acc, eval_precision, eval_recall, eval_f1))
+            print('epoch %d  test auc: %.4f  acc: %.4f  precision: %.4f  recall: %.4f  F1: %.4f'
+                  % (step, test_auc, test_acc, test_precision, test_recall, test_f1))
 
             # top-K evaluation
             if show_topk:
@@ -74,13 +78,19 @@ def get_feed_dict(model, data, start, end):
 def ctr_eval(sess, model, data, batch_size):
     start = 0
     auc_list = []
+    acc_list = []
+    precision_list = []
+    recall_list = []
     f1_list = []
     while start + batch_size <= data.shape[0]:
-        auc, f1 = model.eval(sess, get_feed_dict(model, data, start, start + batch_size))
+        auc, acc, precision, recall, f1 = model.eval(sess, get_feed_dict(model, data, start, start + batch_size))
         auc_list.append(auc)
+        acc_list.append(acc)
+        precision_list.append(precision)
+        recall_list.append(recall)
         f1_list.append(f1)
         start += batch_size
-    return float(np.mean(auc_list)), float(np.mean(f1_list))
+    return float(np.mean(auc_list)), float(np.mean(acc_list)), float(np.mean(precision_list)), float(np.mean(recall_list)), float(np.mean(f1_list))
 
 
 def topk_eval(sess, model, user_list, train_record, test_record, item_set, k_list, batch_size):

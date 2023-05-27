@@ -1,6 +1,7 @@
 import tensorflow as tf
 from aggregators import SumAggregator, ConcatAggregator, NeighborAggregator
 from sklearn.metrics import f1_score, roc_auc_score
+import numpy as np
 
 
 class KGCN(object):
@@ -120,7 +121,27 @@ class KGCN(object):
         scores[scores >= 0.5] = 1
         scores[scores < 0.5] = 0
         f1 = f1_score(y_true=labels, y_pred=scores)
-        return auc, f1
+
+        acc = np.mean(np.equal(scores, labels))
+
+
+        # 计算precision、recall、F1
+        ones = np.ones(labels.shape)
+        # 预测为正的所有 np.sum(np.equal(ones, predictions))
+        # TP：预测为正的正类
+        TP = 0
+        TP_TN = np.equal(scores, labels)  # 预测正确的样本
+        for i in range(TP_TN.shape[0]):  # 遍历预测正确的样本
+            if TP_TN[i] == 1 and scores[i] == 1:
+                TP += 1
+
+        precision = TP / np.sum(np.equal(ones, scores))
+
+        # 预测出了多少真正类
+        # 样本中有多少正类np.sum(np.equal(ones, labels))
+        recall = TP / np.sum(np.equal(ones, labels))
+
+        return auc, acc, precision, recall, f1
 
     def get_scores(self, sess, feed_dict):
         return sess.run([self.item_indices, self.scores_normalized], feed_dict)
